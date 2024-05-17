@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/MrTomSawyer/sso/internal/domain/models"
+	"github.com/MrTomSawyer/sso/internal/lib/jwt"
 	"github.com/MrTomSawyer/sso/internal/storage"
 	"golang.org/x/crypto/bcrypt"
 	"log/slog"
@@ -51,21 +52,20 @@ func (a *Auth) Login(ctx context.Context, email string, password string, appID i
 	const op = "Auth.Login"
 
 	log := a.log.With(slog.String("op", op), slog.String("username", email))
-
 	log.Info("attempting to login user")
 
 	user, err := a.UserProvider.User(ctx, email)
 	if err != nil {
 		if errors.Is(err, storage.ErrUserNotFound) {
-			a.log.Warn("user not found", err)
+			a.log.Warn("user not found", err.Error())
 		}
 
-		a.log.Error("failed to get user", err)
+		a.log.Error("failed to get user", err.Error())
 		return "", fmt.Errorf("%s: %w", op, storage.ErrInvalidCredentials)
 	}
 
 	if err := bcrypt.CompareHashAndPassword(user.PasswordHash, []byte(password)); err != nil {
-		a.log.Info("invalid credentials", err)
+		a.log.Info("invalid credentials", err.Error())
 		return "", fmt.Errorf("%s: %w", op, storage.ErrInvalidCredentials)
 	}
 
@@ -74,8 +74,15 @@ func (a *Auth) Login(ctx context.Context, email string, password string, appID i
 		return "", fmt.Errorf("%s: %w", op, err)
 	}
 
-	a.log.Info("user successfully logged")
+	a.log.Info("user has successfully logged")
 
+	token, err := jwt.NewToken(user, app, a.tokenTTL)
+	if err != nil {
+		a.log.Error("failed to generate token", err.Error())
+		return "", fmt.Errorf("%s: %w", op, err)
+	}
+
+	return token, nil
 }
 
 func (a *Auth) RegisterNewUser(ctx context.Context, email string, password string) (int64, error) {
@@ -100,5 +107,20 @@ func (a *Auth) RegisterNewUser(ctx context.Context, email string, password strin
 }
 
 func (a *Auth) IsAdmin(ctx context.Context, userID int64) (bool, error) {
+	const op = "Auth.IsAdmin"
+	log := a.log.With(
+		slog.String("op", op),
+		slog.Int64("user_id", userID),
+	)
 
+	log.Info("checking if user is an admin")
+
+	isAdmin, err := a.UserProvider.IsAdmin(ctx, userID)
+	if err != nil {
+		return false, fmt.Errorf("%s: %w", op, err)
+	}
+
+	log.Info("checked if user is admin", slog.Bool("is_admin", isAdmin))
+
+	return isAdmin, nil
 }
