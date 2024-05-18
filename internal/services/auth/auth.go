@@ -99,6 +99,10 @@ func (a *Auth) RegisterNewUser(ctx context.Context, email string, password strin
 
 	id, err := a.UserSaver.SaveUser(ctx, email, hash)
 	if err != nil {
+		if errors.Is(err, storage.ErrUserExists) {
+			log.Warn("user already exists", storage.ErrUserExists)
+			return 0, fmt.Errorf("%s: %w", op, err)
+		}
 		log.Error("failed to save user", err.Error())
 		return 0, fmt.Errorf("%s: %w", op, err)
 	}
@@ -117,6 +121,10 @@ func (a *Auth) IsAdmin(ctx context.Context, userID int64) (bool, error) {
 
 	isAdmin, err := a.UserProvider.IsAdmin(ctx, userID)
 	if err != nil {
+		if errors.Is(err, storage.ErrUserNotFound) {
+			log.Warn("user not found", err.Error())
+			return false, fmt.Errorf("%s: %w", op, err)
+		}
 		return false, fmt.Errorf("%s: %w", op, err)
 	}
 
