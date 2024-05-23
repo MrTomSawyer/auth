@@ -25,3 +25,5 @@ func main() {
 	server.GRPCServer.Stop()
 	log.Info("server stopped")
 }
+
+//go run main.go --config=../../config/local.yaml
