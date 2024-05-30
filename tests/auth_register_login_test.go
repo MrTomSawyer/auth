@@ -12,7 +12,6 @@ import (
 )
 
 const (
-	emptyAppID     = 0
 	appID          = 1
 	appSecret      = "sss"
 	passDefaultLen = 10

@@ -15,7 +15,6 @@ type Storage struct {
 }
 
 func New(storagePath string) (*Storage, error) {
-	fmt.Printf("ST PATH !!!: %s \n", storagePath)
 	const op = "storage.sqlite.New"
 
 	db, err := sql.Open("sqlite3", storagePath)
