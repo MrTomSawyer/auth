@@ -3,7 +3,7 @@ package main
 import (
 	"github.com/MrTomSawyer/sso/internal/app"
 	"github.com/MrTomSawyer/sso/internal/config"
-	"github.com/MrTomSawyer/sso/internal/lib/logger"
+	"github.com/MrTomSawyer/sso/pkg/logger"
 	"os"
 	"os/signal"
 	"syscall"
