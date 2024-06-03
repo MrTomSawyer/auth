@@ -11,6 +11,7 @@ type Config struct {
 	Env         string        `yaml:"env" env-default:"local"`
 	StoragePath string        `yaml:"storage_path" env-required:"true"`
 	TokenTTL    time.Duration `yaml:"token_ttl" env-required:"true"`
+	SecretKey   string        `yaml:"secret_key"`
 	GRPC        GRPCConfig    `yaml:"grpc"`
 }
 
@@ -54,7 +55,7 @@ func MustLoadPath(configPath string) *Config {
 func fetchConfigPath() string {
 	var res string
 
-	flag.StringVar(&res, "config", "", "path to config file")
+	flag.StringVar(&res, "config", "config/local.yaml", "path to config file")
 	flag.Parse()
 
 	if res == "" {

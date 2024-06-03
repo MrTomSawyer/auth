@@ -3,10 +3,13 @@ package auth
 import (
 	"context"
 	"errors"
+	"fmt"
 	ssov1 "github.com/MrTomSawyer/protos/gen/go/sso"
 	"github.com/MrTomSawyer/sso/internal/storage"
+	"github.com/golang-jwt/jwt/v5"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 func (s *serverAPI) IsAdmin(ctx context.Context, req *ssov1.IsAdminRequest) (*ssov1.IsAdminResponse, error) {
@@ -20,4 +23,10 @@ func (s *serverAPI) IsAdmin(ctx context.Context, req *ssov1.IsAdminRequest) (*ss
 	return &ssov1.IsAdminResponse{
 		IsAdmin: isAdmin,
 	}, nil
+}
+
+func (s *serverAPI) User(ctx context.Context, none *emptypb.Empty) (*ssov1.UserResponse, error) {
+	user := ctx.Value("user").(jwt.MapClaims)
+	fmt.Printf("TOKEN! : %s", user)
+	return &ssov1.UserResponse{UserExists: true}, nil
 }

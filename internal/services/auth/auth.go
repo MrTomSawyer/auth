@@ -16,8 +16,8 @@ type Auth struct {
 	log          *slog.Logger
 	UserSaver    UserSaver
 	UserProvider UserProvider
-	AppProvider  AppProvider
 	tokenTTL     time.Duration
+	secret       string
 }
 
 type UserSaver interface {
@@ -29,26 +29,20 @@ type UserProvider interface {
 	IsAdmin(ctx context.Context, userID int64) (bool, error)
 }
 
-type AppProvider interface {
-	App(ctx context.Context, appID int) (models.App, error)
-}
-
 func New(
 	log *slog.Logger,
 	UserSaver UserSaver,
 	UserProvider UserProvider,
-	AppProvider AppProvider,
 	tokenTTL time.Duration) *Auth {
 	return &Auth{
 		log:          log,
 		UserSaver:    UserSaver,
 		UserProvider: UserProvider,
-		AppProvider:  AppProvider,
 		tokenTTL:     tokenTTL,
 	}
 }
 
-func (a *Auth) Login(ctx context.Context, email string, password string, appID int) (string, error) {
+func (a *Auth) Login(ctx context.Context, email string, password string) (string, error) {
 	const op = "Auth.Login"
 
 	log := a.log.With(slog.String("op", op), slog.String("username", email))
@@ -69,14 +63,9 @@ func (a *Auth) Login(ctx context.Context, email string, password string, appID i
 		return "", fmt.Errorf("%s: %w", op, storage.ErrInvalidCredentials)
 	}
 
-	app, err := a.AppProvider.App(ctx, appID)
-	if err != nil {
-		return "", fmt.Errorf("%s: %w", op, err)
-	}
-
 	a.log.Info("user has successfully logged")
 
-	token, err := jwt.NewToken(user, app, a.tokenTTL)
+	token, err := jwt.NewToken(user, a.tokenTTL, a.secret)
 	if err != nil {
 		a.log.Error("failed to generate token", err.Error())
 		return "", fmt.Errorf("%s: %w", op, err)
@@ -131,4 +120,23 @@ func (a *Auth) IsAdmin(ctx context.Context, userID int64) (bool, error) {
 	log.Info("checked if user is admin", slog.Bool("is_admin", isAdmin))
 
 	return isAdmin, nil
+}
+
+func (a *Auth) User(ctx context.Context, email string) (bool, error) {
+	const op = "Auth.User"
+
+	log := a.log.With(slog.String("op", op), slog.String("email", email))
+	log.Info("registering user")
+
+	_, err := a.UserProvider.User(ctx, email)
+	if err != nil {
+		if errors.Is(err, storage.ErrUserNotFound) {
+			log.Warn("user not found", err.Error())
+			return false, fmt.Errorf("%s: %w", op, err)
+		}
+		log.Warn("error when finding user", err.Error())
+		return false, fmt.Errorf("%s: %w", op, err)
+	}
+
+	return true, nil
 }

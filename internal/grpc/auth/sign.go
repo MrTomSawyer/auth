@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"errors"
+	"fmt"
 	ssov1 "github.com/MrTomSawyer/protos/gen/go/sso"
 	"github.com/MrTomSawyer/sso/internal/storage"
 	"google.golang.org/grpc/codes"
@@ -10,11 +11,12 @@ import (
 )
 
 func (s *serverAPI) Login(ctx context.Context, req *ssov1.LoginRequest) (*ssov1.LoginResponse, error) {
-	token, err := s.auth.Login(ctx, req.GetEmail(), req.GetPassword(), int(req.GetAppId()))
+	token, err := s.auth.Login(ctx, req.GetEmail(), req.GetPassword())
 	if err != nil {
 		if errors.Is(err, storage.ErrInvalidCredentials) {
 			return nil, status.Errorf(codes.InvalidArgument, "invalid credentials")
 		}
+		fmt.Printf("RRR %s \n", err.Error())
 		return nil, status.Error(codes.Internal, "something went wrong")
 	}
 

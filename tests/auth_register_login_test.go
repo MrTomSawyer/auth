@@ -12,7 +12,6 @@ import (
 )
 
 const (
-	appID          = 1
 	appSecret      = "sss"
 	passDefaultLen = 10
 )
@@ -33,7 +32,6 @@ func TestRegisterLogin(t *testing.T) {
 	respLogin, err := st.AuthClient.Login(ctx, &ssov1.LoginRequest{
 		Email:    email,
 		Password: password,
-		AppId:    appID,
 	})
 	require.NoError(t, err)
 
@@ -52,7 +50,6 @@ func TestRegisterLogin(t *testing.T) {
 
 	assert.Equal(t, respReg.GetUserId(), int64(claims["uid"].(float64)))
 	assert.Equal(t, email, claims["email"].(string))
-	assert.Equal(t, appID, int(claims["app_id"].(float64)))
 
 	const deltaSeconds = 1
 	assert.InDelta(t, loginTime.Add(st.Cfg.TokenTTL).Unix(), claims["exp"].(float64), deltaSeconds)
