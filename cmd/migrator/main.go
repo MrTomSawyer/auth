@@ -10,11 +10,12 @@ import (
 )
 
 func main() {
-	var storagePath, migrationsPath, migrationsTable string
+	var storagePath, migrationsPath, migrationsTable, migrationType string
 
 	flag.StringVar(&storagePath, "storage-path", "", "path to storage")
 	flag.StringVar(&migrationsPath, "migrations-path", "", "path to migrations")
 	flag.StringVar(&migrationsTable, "migrations-table", "migrations", "name of migrations table")
+	flag.StringVar(&migrationType, "migration-type", "", "up or down migration")
 	flag.Parse()
 
 	if storagePath == "" {
@@ -33,17 +34,27 @@ func main() {
 		panic(err)
 	}
 
-	if err = m.Up(); err != nil {
-		if errors.Is(err, migrate.ErrNoChange) {
-			fmt.Println("no migrations to apply")
-
-			return
+	switch migrationType {
+	case "up":
+		if err = m.Up(); err != nil {
+			if errors.Is(err, migrate.ErrNoChange) {
+				fmt.Println("no up migrations to apply")
+				return
+			}
+			panic(err)
 		}
-		panic(err)
+	case "down":
+		if err = m.Down(); err != nil {
+			if errors.Is(err, migrate.ErrNoChange) {
+				fmt.Println("no down migrations to apply")
+				return
+			}
+			panic(err)
+		}
+	default:
+		panic("migration type is not specified")
 	}
-
-	fmt.Println("migrations applied")
 }
 
-// go run ./cmd/migrator --storage-path=./storage/sso.db --migrations-path=./migrations
+// go run ./cmd/migrator --storage-path=./storage/sso.db --migrations-path=./migrations --migration-type=up
 // go run ./cmd/migrator --storage-path=./storage/sso.db --migrations-path=./tests/migrations --migrations-table=migrations_test
